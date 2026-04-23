@@ -43,3 +43,11 @@ This is a **single-page HTML tool** that helps you:
 ```bash
 # Open tool
 open shreeji_privesc.html
+
+---
+
+## 🚀 Preview
+
+<img src="assets/screen1.png" width="100%">
+<img src="assets/screen2.png" width="100%">
+<img src="assets/screen3.png" width="100%">
