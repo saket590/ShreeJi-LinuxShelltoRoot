@@ -43,8 +43,7 @@ This is a **single-page HTML tool** that helps you:
 ```bash
 # Open tool
 open shreeji_privesc.html
-
----
+```
 
 ## 🚀 Preview
 
