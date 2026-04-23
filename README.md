@@ -41,8 +41,6 @@ This is a **single-page HTML tool** that helps you:
 ## 🚀 Usage
 
 ```bash
-# Clone repo
-git clone https://github.com/YOUR_USERNAME/shreeji-privesc.git
 
 # Open tool
-open index.html
+open shreeji_privesc.html
